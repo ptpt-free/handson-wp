@@ -19,5 +19,5 @@ variable "userNumber" {
 }
 
 variable "project" {
-  default = "nic-tranning-enablement"
+  default = "handson-project"
 }
