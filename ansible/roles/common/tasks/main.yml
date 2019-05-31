@@ -1,0 +1,22 @@
+---
+- name: Update apt cache (Debian).
+  apt: update_cache=yes cache_valid_time=86400
+  when: ansible_os_family == 'Debian'
+
+
+- name: install nginx
+  apt: name=nginx update_cache=yes cache_valid_time=3600
+
+
+- name: copy nginx config file
+  template: src=templates/nginx.conf.j2 dest={{ conf_file }}
+  notify: restart nginx
+
+- name: enable configuration
+  file: dest=/etc/nginx/sites-enabled/default src={{ conf_file }} state=link
+  notify: restart nginx
+
+- name: copy index.html
+  template: src=templates/index.html.j2 dest=/usr/share/nginx/html/index.html mode=0644
+
+

@@ -1,0 +1,9 @@
+key_file: /etc/nginx/ssl/nginx.key
+cert_file: /etc/nginx/ssl/nginx.crt
+conf_file: /etc/nginx/sites-available/default
+server_name: localhost
+mysql_db_username: wordpressuser
+mysql_db_password: PassW0rd!234
+mysql_db_database: wordpress
+wp_path: /usr/share/nginx/html
+

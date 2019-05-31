@@ -1,0 +1,104 @@
+---
+- name: install php
+  apt: name={{item}} update_cache=yes cache_valid_time=3600
+  with_items:
+      -  php
+      -  php-common
+      -  php-curl
+      -  php-fpm
+      -  php-gd
+      -  php-imagick
+      -  php-mbstring
+      -  php-mysql
+      -  php-xml
+      -  php-xmlrpc
+      -  php-bz2
+      -  php7.2
+      -  php7.2-cli
+      -  php7.2-common
+      -  php7.2-curl
+      -  php7.2-fpm
+      -  php7.2-gd
+      -  php7.2-json
+      -  php7.2-mbstring
+      -  php7.2-mysql
+      -  php7.2-opcache
+      -  php7.2-readline
+      -  php7.2-xml
+      -  php7.2-xmlrpc
+      -  php-fpm
+
+
+- name: configuration php
+  replace: dest=/etc/php/7.2/fpm/php.ini regexp='^;mbstring.language' replace='mbstring.language' backup=yes
+  notify: restart php-fpm
+
+- name: configuration php
+  replace: dest=/etc/php/7.2/fpm/php.ini regexp='^;mbstring.internal_encoding =' replace='mbstring.internal_encoding = UTF-8' backup=yes
+  notify: restart php-fpm
+
+- name: configuration php
+  replace: dest=/etc/php/7.2/fpm/php.ini regexp='^;mbstring.http_input =' replace='mbstring.http_input = auto' backup=yes
+  notify: restart php-fpm
+
+- name: enable php-fpm
+  systemd: name=php7.2-fpm enabled=yes
+
+- name: install mysql
+  apt: name={{item}} update_cache=yes cache_valid_time=3600  state=installed
+  with_items:
+      -  mysql-server-5.7
+      -  python-mysqldb
+
+- name: running and enabled mysqld
+  systemd: name=mysql enabled=yes
+
+- name: create mysql database
+  mysql_db:
+    name: "{{ mysql_db_database }}"
+    state: present
+
+- name: create mysql user
+  mysql_user:
+    name: "{{ mysql_db_username }}"
+    password: "{{ mysql_db_password }}"
+    priv: "wordpress.*:ALL"
+    host: localhost
+    state: present
+
+- name: configuration  mysql
+  replace: dest=/etc/mysql/mysql.conf.d/mysqld.cnf regexp='^#general_log_file' replace='general_log_file' backup=yes
+  notify: restart mysql
+
+
+
+- name: Install wp-cli
+  get_url:
+    url: https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+    dest: /usr/local/bin/wp
+    mode: 0755
+
+- name: delete html directory
+  file:
+    path=/usr/share/nginx/html
+    state=absent
+
+- name: change owner root to www-data
+  file:
+    path=/usr/share/nginx/html
+    state=directory
+    owner=www-data
+    group=www-data
+    recurse=yes
+ 
+- name: Download wp core
+  shell: /usr/local/bin/wp core download --path="{{ wp_path }}"
+  become: yes
+  become_user: www-data
+ 
+- name: Generate wp config
+  shell: /usr/local/bin/wp core config --dbname="{{ mysql_db_database }}" --dbuser="{{ mysql_db_username }}" --dbpass="{{ mysql_db_password }}" --dbhost="localhost" --path="{{ wp_path }}"
+  become: yes
+  become_user: www-data
+ 
+
